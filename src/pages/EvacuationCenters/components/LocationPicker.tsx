@@ -8,17 +8,30 @@ import {
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Loader2, MapPin, Search } from "lucide-react";
 
-// Keyless OpenStreetMap raster basemap (CARTO Voyager tiles). No API key needed.
+const CARTO_BASEMAP_API_KEY = (
+    import.meta.env.VITE_CARTO_BASEMAP_API_KEY as string | undefined
+)?.trim();
+
+function cartoRasterTileUrl(subdomain: "a" | "b" | "c" | "d") {
+    const keyQuery = CARTO_BASEMAP_API_KEY
+        ? `?key=${encodeURIComponent(CARTO_BASEMAP_API_KEY)}`
+        : "";
+
+    return `https://${subdomain}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png${keyQuery}`;
+}
+
+// OpenStreetMap raster basemap served by CARTO. The API key is optional so the
+// picker can still render during local development before an environment is set.
 const rasterStyle: StyleSpecification = {
     version: 8,
     sources: {
         basemap: {
             type: "raster",
             tiles: [
-                "https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
-                "https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
-                "https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
-                "https://d.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
+                cartoRasterTileUrl("a"),
+                cartoRasterTileUrl("b"),
+                cartoRasterTileUrl("c"),
+                cartoRasterTileUrl("d"),
             ],
             tileSize: 256,
             attribution: "© OpenStreetMap contributors, © CARTO",
@@ -50,6 +63,7 @@ interface LocationPickerProps {
     longitude: number | null;
     onChange: (next: PickedLocation) => void;
     disabled?: boolean;
+    validationError?: string;
 }
 
 async function reverseGeocode(
@@ -76,6 +90,7 @@ export default function LocationPicker({
     longitude,
     onChange,
     disabled = false,
+    validationError,
 }: LocationPickerProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const mapRef = useRef<MapLibreMap | null>(null);
@@ -101,6 +116,15 @@ export default function LocationPicker({
     const searchFeedbackId = searchInputId
         ? `${searchInputId}-feedback`
         : undefined;
+    const validationErrorId = searchInputId
+        ? `${searchInputId}-validation-error`
+        : undefined;
+    const searchDescriptionIds = [
+        searchFeedback ? searchFeedbackId : undefined,
+        validationError ? validationErrorId : undefined,
+    ]
+        .filter(Boolean)
+        .join(" ");
 
     const placeMarker = (lng: number, lat: number) => {
         const map = mapRef.current;
@@ -269,7 +293,7 @@ export default function LocationPicker({
     };
 
     const inputClass =
-        "w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/40";
+        "w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/40 aria-[invalid=true]:border-red-500 aria-[invalid=true]:focus:ring-red-500/30";
 
     return (
         <div className="space-y-2">
@@ -282,7 +306,8 @@ export default function LocationPicker({
                             className={`${inputClass} pl-8`}
                             value={query}
                             disabled={disabled}
-                            aria-describedby={searchFeedbackId}
+                            aria-invalid={Boolean(validationError)}
+                            aria-describedby={searchDescriptionIds || undefined}
                             onChange={(e) => {
                                 searchRequestRef.current += 1;
                                 searchAbortRef.current?.abort();
@@ -368,6 +393,16 @@ export default function LocationPicker({
                     <span>Search or tap the map to drop a pin.</span>
                 )}
             </p>
+
+            {validationError && (
+                <p
+                    id={validationErrorId}
+                    role="alert"
+                    className="text-xs font-medium text-red-600 dark:text-red-400"
+                >
+                    {validationError}
+                </p>
+            )}
         </div>
     );
 }

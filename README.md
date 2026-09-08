@@ -40,6 +40,7 @@ npm run dev
 |----------|-------------|
 | `VITE_API_BASE_URL` | Backend API URL (e.g., `http://localhost:8000`) |
 | `VITE_API_WS_URL` | Backend WebSocket origin (e.g., `ws://localhost:8000`; app appends `/ws`) |
+| `VITE_CARTO_BASEMAP_API_KEY` | CARTO basemap key used by the evacuation-center location picker. Add it to Vercel for production deployments. |
 
 ## Scripts
 

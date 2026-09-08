@@ -18,6 +18,21 @@ interface CenterFormModalProps {
     onSaved: (center: EvacuationCenter) => void;
 }
 
+interface FormErrors {
+    name?: string;
+    location?: string;
+    capacity?: string;
+}
+
+function getCapacityError(value: string) {
+    if (value.trim() === "") return undefined;
+
+    const parsed = Number(value);
+    return Number.isInteger(parsed) && parsed >= 0
+        ? undefined
+        : "Capacity must be a non-negative whole number";
+}
+
 export default function CenterFormModal({
     locationId,
     center,
@@ -50,11 +65,22 @@ export default function CenterFormModal({
     const [status, setStatus] = useState<EvacuationCenterStatus>(
         center?.status ?? "open",
     );
+    const [errors, setErrors] = useState<FormErrors>({});
     const [isSaving, setIsSaving] = useState(false);
+
+    const clearError = (field: keyof FormErrors) => {
+        setErrors((current) => {
+            if (!current[field]) return current;
+            const next = { ...current };
+            delete next[field];
+            return next;
+        });
+    };
 
     const handlePickLocation = (next: PickedLocation) => {
         setLatitude(next.latitude);
         setLongitude(next.longitude);
+        clearError("location");
         // Only overwrite the address when the picker supplies one (reverse
         // geocode / search); a plain map tap leaves the admin's edits intact.
         if (next.address) setAddress(next.address);
@@ -63,17 +89,33 @@ export default function CenterFormModal({
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!name.trim()) return toastError("Name is required");
-        if (latitude == null || longitude == null)
-            return toastError("Pick the center's location on the map");
+        const nextErrors: FormErrors = {};
+        if (!name.trim()) nextErrors.name = "Name is required";
+        if (latitude == null || longitude == null) {
+            nextErrors.location = "Pick the center's location on the map";
+        }
 
+        const capacityError = getCapacityError(capacity);
+        if (capacityError) nextErrors.capacity = capacityError;
+
+        if (Object.keys(nextErrors).length > 0) {
+            setErrors(nextErrors);
+            const firstInvalidFieldId = nextErrors.name
+                ? nameId
+                : nextErrors.location
+                  ? locationSearchId
+                  : capacityId;
+            requestAnimationFrame(() => {
+                document.getElementById(firstInvalidFieldId)?.focus();
+            });
+            return;
+        }
+
+        setErrors({});
+        // The location validation above guarantees both coordinates here.
+        const selectedLatitude = latitude!;
+        const selectedLongitude = longitude!;
         const capacityValue = capacity.trim() === "" ? null : Number(capacity);
-        if (
-            capacityValue !== null &&
-            (!Number.isInteger(capacityValue) || capacityValue < 0)
-        )
-            return toastError("Capacity must be a non-negative whole number");
-
         setIsSaving(true);
         try {
             let saved: EvacuationCenter;
@@ -81,8 +123,8 @@ export default function CenterFormModal({
                 saved = await evacuationCentersAPI.update(center!.id, {
                     name: name.trim(),
                     address: address.trim() || null,
-                    latitude,
-                    longitude,
+                    latitude: selectedLatitude,
+                    longitude: selectedLongitude,
                     capacity: capacityValue,
                     contact: contact.trim() || null,
                     status,
@@ -92,8 +134,8 @@ export default function CenterFormModal({
                     location_id: locationId,
                     name: name.trim(),
                     address: address.trim() || null,
-                    latitude,
-                    longitude,
+                    latitude: selectedLatitude,
+                    longitude: selectedLongitude,
                     capacity: capacityValue,
                     contact: contact.trim() || null,
                     status,
@@ -112,7 +154,7 @@ export default function CenterFormModal({
     };
 
     const inputClass =
-        "w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60";
+        "w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/40 aria-[invalid=true]:border-red-500 aria-[invalid=true]:focus:ring-red-500/30 disabled:cursor-not-allowed disabled:opacity-60";
     const labelClass =
         "block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1";
     const handleClose = () => {
@@ -146,7 +188,7 @@ export default function CenterFormModal({
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-4" noValidate>
                     <div>
                         <label htmlFor={nameId} className={labelClass}>
                             Name
@@ -157,10 +199,29 @@ export default function CenterFormModal({
                             disabled={isSaving}
                             className={inputClass}
                             value={name}
-                            onChange={(e) => setName(e.target.value)}
+                            aria-invalid={Boolean(errors.name)}
+                            aria-describedby={
+                                errors.name ? `${nameId}-error` : undefined
+                            }
+                            onChange={(e) => {
+                                const nextName = e.target.value;
+                                setName(nextName);
+                                if (errors.name && nextName.trim()) {
+                                    clearError("name");
+                                }
+                            }}
                             placeholder="e.g. Barangay Hall Covered Court"
                             maxLength={120}
                         />
+                        {errors.name && (
+                            <p
+                                id={`${nameId}-error`}
+                                role="alert"
+                                className="mt-1.5 text-xs font-medium text-red-600 dark:text-red-400"
+                            >
+                                {errors.name}
+                            </p>
+                        )}
                     </div>
 
                     <div>
@@ -173,6 +234,7 @@ export default function CenterFormModal({
                             longitude={longitude}
                             onChange={handlePickLocation}
                             disabled={isSaving}
+                            validationError={errors.location}
                         />
                     </div>
 
@@ -204,10 +266,34 @@ export default function CenterFormModal({
                                 disabled={isSaving}
                                 className={inputClass}
                                 value={capacity}
-                                onChange={(e) => setCapacity(e.target.value)}
+                                aria-invalid={Boolean(errors.capacity)}
+                                aria-describedby={
+                                    errors.capacity
+                                        ? `${capacityId}-error`
+                                        : undefined
+                                }
+                                onChange={(e) => {
+                                    const nextCapacity = e.target.value;
+                                    setCapacity(nextCapacity);
+                                    if (
+                                        errors.capacity &&
+                                        !getCapacityError(nextCapacity)
+                                    ) {
+                                        clearError("capacity");
+                                    }
+                                }}
                                 placeholder="200"
                                 inputMode="numeric"
                             />
+                            {errors.capacity && (
+                                <p
+                                    id={`${capacityId}-error`}
+                                    role="alert"
+                                    className="mt-1.5 text-xs font-medium text-red-600 dark:text-red-400"
+                                >
+                                    {errors.capacity}
+                                </p>
+                            )}
                         </div>
                         <div>
                             <label htmlFor={statusId} className={labelClass}>
