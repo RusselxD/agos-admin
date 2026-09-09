@@ -8,11 +8,6 @@ export const coreAPI = {
         return res.data as LocationDetails;
     },
 
-    getPublicLocationDetails: async (): Promise<LocationDetails> => {
-        const res = await apiClient.get("/core/public/location-details");
-        return res.data as LocationDetails;
-    },
-
     getDeviceDetails: async (): Promise<DeviceDetails> => {
         const res = await apiClient.get("/core/device-details");
         return res.data as DeviceDetails;

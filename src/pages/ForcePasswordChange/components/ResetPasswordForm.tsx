@@ -108,8 +108,8 @@ export default function ResetPasswordForm() {
             updateUser(res.access_token);
 
             toastSuccess("Password changed successfully.");
-            navigate("/admin");
-        } catch (error) {
+            navigate("/dashboard");
+        } catch {
             toastError("Failed to change password. Please try again.");
         } finally {
             setIsLoading(false);

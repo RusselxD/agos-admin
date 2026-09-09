@@ -32,53 +32,53 @@ interface SidebarProps {
 const tabs = [
     {
         name: "Dashboard",
-        path: "/admin/dashboard",
+        path: "/dashboard",
         icon: MonitorDot,
     },
     {
         name: "Weather",
-        path: "/admin/weather",
+        path: "/weather",
         icon: CloudSunRain,
     },
     {
         name: "Sensor",
-        path: "/admin/sensor",
+        path: "/sensor",
         icon: Waves,
     },
     {
         name: "Responders",
-        path: "/admin/responders",
+        path: "/responders",
         icon: Users,
     },
     {
         name: "Reading Logs",
-        path: "/admin/reading-logs",
+        path: "/reading-logs",
         icon: FileCheck,
     },
     {
         name: "Notif Logs",
-        path: "/admin/notification-logs",
+        path: "/notification-logs",
         icon: BellRing,
     },
     {
         name: "Detection Logs",
-        path: "/admin/detection-logs",
+        path: "/detection-logs",
         icon: ScanEye,
     },
     {
         name: "Evacuation",
-        path: "/admin/evacuation",
+        path: "/evacuation",
         icon: Siren,
         end: false,
     },
     {
         name: "Admins",
-        path: "/admin/admins",
+        path: "/admins",
         icon: UserStar,
     },
     {
         name: "Settings",
-        path: "/admin/settings",
+        path: "/settings",
         icon: Settings,
     },
 ];
@@ -98,9 +98,9 @@ export default function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
                 <div className="w-full flex items-center justify-between py-2 mt-1">
                     {!isCollapsed && (
                         <Link
-                            to="/"
-                            aria-label="Go to landing page"
-                            title="Go to landing page"
+                            to="/dashboard"
+                            aria-label="Go to dashboard"
+                            title="Go to dashboard"
                             className="rounded-md hover:opacity-80 transition-opacity"
                         >
                             <img

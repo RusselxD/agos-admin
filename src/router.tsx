@@ -8,8 +8,6 @@ import Sensor from "./pages/Sensor";
 import Settings from "./pages/Settings";
 import Responders from "./pages/Responders";
 import ProtectedRoute from "./guards/ProtectedRoute";
-import Public from "./pages/Public";
-import Landing from "./pages/Landing";
 
 import Admins from "./pages/Admins";
 import Login from "./pages/Login";
@@ -52,7 +50,7 @@ export const router = createBrowserRouter([
     ],
   },
   {
-    path: "admin",
+    path: "/",
     element: (
       // BlockageProvider = for blockage detection AI status
       // WeatherProvider = for weather condition data
@@ -85,7 +83,7 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <Navigate to="dashboard" replace />,
+        element: <Navigate to="/dashboard" replace />,
       },
       {
         path: "dashboard",
@@ -135,11 +133,11 @@ export const router = createBrowserRouter([
       },
       {
         path: "evacuation-centers",
-        element: <Navigate to="/admin/evacuation/centers" replace />,
+        element: <Navigate to="/evacuation/centers" replace />,
       },
       {
         path: "evacuation-control",
-        element: <Navigate to="/admin/evacuation/control" replace />,
+        element: <Navigate to="/evacuation/control" replace />,
       },
       {
         path: "admins",
@@ -156,13 +154,5 @@ export const router = createBrowserRouter([
         element: <ErrorBoundary><Settings /></ErrorBoundary>,
       },
     ],
-  },
-  {
-    path: "/",
-    element: <ErrorBoundary><Landing /></ErrorBoundary>,
-  },
-  {
-    path: "/public",
-    element: <ErrorBoundary><Public /></ErrorBoundary>,
   },
 ]);

@@ -55,16 +55,16 @@ npm run dev
 
 | Route | Page | Description |
 |-------|------|-------------|
-| `/` | Public Dashboard | Read-only live status cards for unauthenticated visitors; authenticated admins redirect to `/admin` |
-| `/admin/dashboard` | Dashboard | Fusion risk score, water level, weather, blockage status, live camera frames |
-| `/admin/weather` | Weather | Weather conditions from OpenMeteo |
-| `/admin/sensor` | Sensor | Sensor config, readings table, water level trend chart, data export |
-| `/admin/responders` | Responders | Responder list, groups, notification templates, announcements |
-| `/admin/reading-logs` | Reading Logs | Daily summaries, charts, AI analysis (SSE streaming) |
-| `/admin/notification-logs` | Notification Logs | Per-responder delivery history, analytics cards, Excel export |
-| `/admin/detection-logs` | Detection Logs | AI blockage detection image history |
-| `/admin/admins` | Admins | Admin user management (create, deactivate/reactivate), audit logs |
-| `/admin/settings` | Settings | Data retention, sensor configuration |
+| `/dashboard` | Dashboard | Fusion risk score, water level, weather, blockage status, live camera frames |
+| `/weather` | Weather | Weather conditions from OpenMeteo |
+| `/sensor` | Sensor | Sensor config, readings table, water level trend chart, data export |
+| `/responders` | Responders | Responder list, groups, notification templates, announcements |
+| `/reading-logs` | Reading Logs | Daily summaries, charts, AI analysis (SSE streaming) |
+| `/notification-logs` | Notification Logs | Per-responder delivery history, analytics cards, Excel export |
+| `/detection-logs` | Detection Logs | AI blockage detection image history |
+| `/evacuation` | Evacuation | Evacuation recommendations, dispatch controls, and center management |
+| `/admins` | Admins | Admin user management (create, deactivate/reactivate), audit logs |
+| `/settings` | Settings | Data retention, sensor configuration |
 
 ## Project Structure
 
@@ -89,4 +89,4 @@ src/
 
 ## Auth
 
-JWT-based with access + refresh tokens. The axios interceptor automatically refreshes expired tokens. Admin login at `/auth/login`.
+JWT-based with access + refresh tokens. The axios interceptor automatically refreshes expired tokens. Admin login is at `/auth/login`; successful authentication opens `/dashboard`.

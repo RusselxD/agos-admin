@@ -35,7 +35,7 @@ export default function LoginForm() {
         try {
             setIsLoading(true);
             await login(normalizedPhoneNumber, password);
-            navigate("/admin");
+            navigate("/dashboard");
         } catch (error) {
             if (axios.isAxiosError(error)) {
                 setErrorMessage(

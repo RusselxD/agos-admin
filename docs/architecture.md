@@ -15,7 +15,7 @@ Context API only — no Redux or Zustand. Contexts are layered by scope:
 | `AuthContext` | `useAuth()` | JWT state, login/logout, token refresh |
 | `ToastContext` | `useToast()` | `toastSuccess()`, `toastError()` notifications |
 
-### Domain Contexts (under `/admin` routes)
+### Domain Contexts (under protected routes)
 
 Nested in this order inside `MainLayout`:
 ```
@@ -87,23 +87,23 @@ Key types:
 
 ```
 /
-├── /                          → Public dashboard; authenticated admins redirect to /admin
 ├── /auth
 │   ├── /login                    → Login
 │   └── /force-password-change    → ForcePasswordChange
-└── /admin                        → ProtectedRoute + Providers + MainLayout
-    ├── /dashboard                → Dashboard
+└── ProtectedRoute + Providers + MainLayout
+    ├── /dashboard                → Dashboard (default)
     ├── /weather                  → Weather
     ├── /sensor                   → Sensor
     ├── /responders               → Responders
     ├── /reading-logs             → ReadingLogs
     ├── /notification-logs        → NotificationLogs
     ├── /detection-logs           → DetectionLogs
+    ├── /evacuation               → Evacuation control and centers
     ├── /admins                   → Admins (with AdminsPageProvider)
     └── /settings                 → Settings
 ```
 
-`/` shows the public dashboard for unauthenticated visitors and redirects authenticated admins to `/admin`. `/admin` redirects to `/admin/dashboard`.
+`/` enters the protected application and redirects authenticated admins to `/dashboard`. Unauthenticated visitors are redirected to `/auth/login`.
 
 ## Page Architecture
 
@@ -122,11 +122,6 @@ src/pages/PageName/
 - **WaterLevelCard** — Current level, trend, alert distances
 - **WeatherCard** — Conditions, precipitation, temperature
 - **VideoContainer** — latest base64 JPEG frame from `camera_update`
-
-### Public
-- Unauthenticated, read-only dashboard at `/`
-- Uses `GET /core/public/location-details`, public alert thresholds, and the same WebSocket stream scoped by location
-- Authenticated admins are redirected to `/admin`
 
 ### Sensor
 - **SensorStatus** — Device connection state, signal strength
@@ -177,15 +172,16 @@ SSE streaming hook for AI analysis:
 
 | # | Label | Icon | Route |
 |---|-------|------|-------|
-| 1 | Dashboard | MonitorDot | `/admin/dashboard` |
-| 2 | Weather | CloudSunRain | `/admin/weather` |
-| 3 | Sensor | Waves | `/admin/sensor` |
-| 4 | Responders | Users | `/admin/responders` |
-| 5 | Reading Logs | FileCheck | `/admin/reading-logs` |
-| 6 | Notif Logs | BellRing | `/admin/notification-logs` |
-| 7 | Detection Logs | ScanEye | `/admin/detection-logs` |
-| 8 | Admins | UserStar | `/admin/admins` |
-| 9 | Settings | Settings | `/admin/settings` |
+| 1 | Dashboard | MonitorDot | `/dashboard` |
+| 2 | Weather | CloudSunRain | `/weather` |
+| 3 | Sensor | Waves | `/sensor` |
+| 4 | Responders | Users | `/responders` |
+| 5 | Reading Logs | FileCheck | `/reading-logs` |
+| 6 | Notif Logs | BellRing | `/notification-logs` |
+| 7 | Detection Logs | ScanEye | `/detection-logs` |
+| 8 | Evacuation | Siren | `/evacuation` |
+| 9 | Admins | UserStar | `/admins` |
+| 10 | Settings | Settings | `/settings` |
 
 Collapsible: 20px collapsed / 56px expanded. Active tab indicated by left border highlight.
 
