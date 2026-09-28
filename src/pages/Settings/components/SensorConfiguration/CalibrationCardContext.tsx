@@ -4,11 +4,16 @@ import type { SensorConfig } from "../../../../types/sensor";
 import { sensorAPI } from "../../../../lib/api/sensor";
 import { useCoreHook } from "../../../../context/CoreContext";
 import { useToast } from "../../../../context/ToastContext";
+import {
+    validateSensorConfig,
+    type SensorConfigValidationErrors,
+} from "./sensorConfigValidation";
 
 interface CalibrationCardContextValue {
     originalConfig: SensorConfig | null;
     newConfig: SensorConfig | null;
-    handleUpdateConfig: (config: string, value: number) => void;
+    validationErrors: SensorConfigValidationErrors;
+    handleUpdateConfig: (config: keyof SensorConfig, value: number) => void;
 
     isFetching: boolean;
 
@@ -36,10 +41,24 @@ export function SensorConfigurationProvider({
     const [isEditing, setIsEditing] = useState<boolean>(false);
     const [isFetching, setIsFetching] = useState<boolean>(true);
     const [isSaving, setIsSaving] = useState<boolean>(false);
+    const [showValidationErrors, setShowValidationErrors] =
+        useState<boolean>(false);
 
-    const handleUpdateConfig = (config: string, value: number) => {
+    const handleUpdateConfig = (
+        config: keyof SensorConfig,
+        value: number,
+    ) => {
         setNewConfig((prev) => (prev ? { ...prev, [config]: value } : null));
     };
+
+    const currentValidationErrors = useMemo(
+        () => validateSensorConfig(newConfig),
+        [newConfig],
+    );
+    const validationErrors = useMemo(
+        () => (showValidationErrors ? currentValidationErrors : {}),
+        [currentValidationErrors, showValidationErrors],
+    );
 
     const { sensorDeviceDetails } = useCoreHook();
     const { toastSuccess, toastError } = useToast();
@@ -64,11 +83,18 @@ export function SensorConfigurationProvider({
     useEffect(() => {
         if (isEditing) {
             setNewConfig(originalConfig);
+            setShowValidationErrors(false);
         }
     }, [isEditing]);
 
     const handleSaveChanges = async () => {
         if (!newConfig) return;
+
+        if (Object.keys(currentValidationErrors).length > 0) {
+            setShowValidationErrors(true);
+            toastError("Please correct the sensor configuration errors");
+            return;
+        }
 
         try {
             setIsSaving(true);
@@ -90,6 +116,7 @@ export function SensorConfigurationProvider({
         () => ({
             originalConfig,
             newConfig,
+            validationErrors,
             handleUpdateConfig,
             isFetching,
             isSaving,
@@ -97,7 +124,14 @@ export function SensorConfigurationProvider({
             setIsEditing,
             handleSaveChanges,
         }),
-        [originalConfig, newConfig, isEditing, isFetching, isSaving],
+        [
+            originalConfig,
+            newConfig,
+            validationErrors,
+            isEditing,
+            isFetching,
+            isSaving,
+        ],
     );
 
     return (

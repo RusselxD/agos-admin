@@ -36,23 +36,44 @@ const ThresholdCard = ({
 const HeightInput = ({
     height,
     config,
+    error,
 }: {
     height: number | undefined;
-    config: string;
+    config: "installation_height" | "warning_threshold" | "critical_threshold";
+    error?: string;
 }) => {
     const { handleUpdateConfig } = useCalibrationCard();
+    const errorId = `${config}-error`;
 
     return (
-        <div className="flex items-center w-full gap-2">
-            <input
-                type="number"
-                className="px-3 py-2 w-full rounded-md border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/50"
-                value={height ?? ""}
-                onChange={(e) =>
-                    handleUpdateConfig(config, e.target.valueAsNumber)
-                }
-            />
-            <span>cm</span>
+        <div className="w-full">
+            <div className="flex items-center w-full gap-2">
+                <input
+                    type="number"
+                    step="1"
+                    aria-invalid={Boolean(error)}
+                    aria-describedby={error ? errorId : undefined}
+                    className={`px-3 py-2 w-full rounded-md border bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200 focus:outline-none focus:ring-2 ${
+                        error
+                            ? "border-red-500 dark:border-red-500 focus:ring-red-500/50"
+                            : "border-gray-300 dark:border-slate-700 focus:ring-primary/50"
+                    }`}
+                    value={Number.isFinite(height) ? height : ""}
+                    onChange={(e) =>
+                        handleUpdateConfig(config, e.target.valueAsNumber)
+                    }
+                />
+                <span>cm</span>
+            </div>
+            {error && (
+                <p
+                    id={errorId}
+                    role="alert"
+                    className="mt-1 text-xs font-medium text-red-600 dark:text-red-400"
+                >
+                    {error}
+                </p>
+            )}
         </div>
     );
 };
@@ -71,7 +92,8 @@ const InstallationHeightCard = () => {
     // 5. Pi sends this value back to frontend
     // 6. Frontend auto-fills the Installation Height field
 
-    const { isEditing, originalConfig, newConfig } = useCalibrationCard();
+    const { isEditing, originalConfig, newConfig, validationErrors } =
+        useCalibrationCard();
 
     return (
         <ThresholdCard
@@ -87,6 +109,7 @@ const InstallationHeightCard = () => {
                     <HeightInput
                         height={newConfig?.installation_height}
                         config="installation_height"
+                        error={validationErrors.installation_height}
                     />
                 ) : (
                     <HeightDisplay
@@ -99,7 +122,8 @@ const InstallationHeightCard = () => {
 };
 
 const WarningThresholdCard = () => {
-    const { isEditing, originalConfig, newConfig } = useCalibrationCard();
+    const { isEditing, originalConfig, newConfig, validationErrors } =
+        useCalibrationCard();
 
     return (
         <ThresholdCard
@@ -115,6 +139,7 @@ const WarningThresholdCard = () => {
                     <HeightInput
                         height={newConfig?.warning_threshold}
                         config="warning_threshold"
+                        error={validationErrors.warning_threshold}
                     />
                 ) : (
                     <HeightDisplay height={originalConfig?.warning_threshold} />
@@ -125,7 +150,8 @@ const WarningThresholdCard = () => {
 };
 
 const CriticalThresholdCard = () => {
-    const { isEditing, originalConfig, newConfig } = useCalibrationCard();
+    const { isEditing, originalConfig, newConfig, validationErrors } =
+        useCalibrationCard();
 
     return (
         <ThresholdCard
@@ -141,6 +167,7 @@ const CriticalThresholdCard = () => {
                     <HeightInput
                         height={newConfig?.critical_threshold}
                         config="critical_threshold"
+                        error={validationErrors.critical_threshold}
                     />
                 ) : (
                     <HeightDisplay
