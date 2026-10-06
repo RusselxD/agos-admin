@@ -69,6 +69,11 @@ export default function AnalyzePanel() {
                     <div className="px-5 py-3 text-xs text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
                         <p>{report.location_name} · {report.summaries.length} observed days · {report.timezone}</p>
                         {report.missing_dates.length > 0 && <p>{report.missing_dates.length} days have no summary.</p>}
+                        {!!report.partial_dates?.length && (
+                            <p className="mt-1 text-amber-700 dark:text-amber-400">
+                                Partial day: {report.partial_dates.join(", ")}. Its saved summary may cover only part of the day.
+                            </p>
+                        )}
                         <p>Data captured: {new Date(Date.parse(report.created_at) + report.utc_offset_hours * 3600000)
                             .toLocaleString("en-PH", { timeZone: "UTC", hour12: false })} {report.timezone}</p>
                     </div>

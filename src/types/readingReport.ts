@@ -11,6 +11,7 @@ export type ReadingReport = ReportRequest & {
     utc_offset_hours: number;
     summaries: DailySummary[];
     missing_dates: string[];
+    partial_dates: string[];
     status: "pending" | "streaming" | "complete" | "error";
     analysis_text: string;
     analysis_error: string | null;
