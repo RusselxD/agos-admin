@@ -4,8 +4,8 @@ import type { ElementType } from "react";
 interface CompactMetricCardProps {
     icon: ElementType;
     label: string;
-    minValue: number;
-    maxValue: number;
+    minValue: number | null;
+    maxValue: number | null;
     unit: string;
     iconColor: string;
 }
@@ -32,7 +32,7 @@ export default function CompactMetricCard({
                 <div className="text-center">
                     <p className="text-xs text-gray-400 dark:text-slate-500 mb-1">Min</p>
                     <p className="text-lg font-semibold text-neutral dark:text-slate-200">
-                        {minValue}
+                        {minValue ?? "N/A"}
                     </p>
                     <p className="text-[10px] text-gray-400 dark:text-slate-500">{unit}</p>
                 </div>
@@ -40,7 +40,7 @@ export default function CompactMetricCard({
                 <div className="text-center">
                     <p className="text-xs text-gray-400 dark:text-slate-500 mb-1">Max</p>
                     <p className="text-lg font-semibold text-neutral dark:text-slate-200">
-                        {maxValue}
+                        {maxValue ?? "N/A"}
                     </p>
                     <p className="text-[10px] text-gray-400 dark:text-slate-500">{unit}</p>
                 </div>

@@ -26,7 +26,14 @@ export type RiskLevelConfig = {
     blurClass: string;
 };
 
-const getRiskLevel = (score: number): RiskLevelConfig => {
+const getRiskLevel = (score: number | null): RiskLevelConfig => {
+    if (score === null) return {
+        label: "Unknown", color: "gray", bgGradient: "from-gray-100 to-gray-50",
+        textClass: "text-gray-500", borderClass: "border-gray-200",
+        bgClass: "bg-gray-100", dotClass: "bg-gray-400",
+        badgeBgClass: "bg-gray-100", badgeBorderClass: "border-gray-200",
+        progressClass: "from-gray-300 to-gray-400", blurClass: "bg-gray-100",
+    };
     if (score >= 70)
         return {
             label: "High",

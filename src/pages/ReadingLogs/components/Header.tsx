@@ -3,7 +3,7 @@ import { useReadingLogs } from "../context/ReadingLogsContext";
 import DateRangePicker from "./DataTable/DateRangePicker";
 
 export default function Header() {
-    const { setAnalyzeDrawerIsOpen } = useReadingLogs();
+    const { setAnalyzeDrawerIsOpen, isLoading, summaries } = useReadingLogs();
 
     return (
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/60 dark:bg-white/[0.03] backdrop-blur-xl py-4 px-6 rounded-2xl shadow-xl border border-white/50 dark:border-white/10 transition-all duration-300 hover:shadow-2xl">
@@ -12,7 +12,8 @@ export default function Header() {
                 <h2 className="font-semibold text-lg whitespace-nowrap dark:text-slate-200">Daily Summaries</h2>
                 
                 <button
-                    className="gemini-btn md:hidden"
+                    className="gemini-btn md:hidden disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={isLoading || summaries.length === 0}
                     onClick={() => setAnalyzeDrawerIsOpen(true)}
                 >
                     <Sparkles className="gemini-btn-icon w-4 h-4" />
@@ -28,7 +29,8 @@ export default function Header() {
                 
                 <div className="hidden md:block h-6 w-px bg-gray-200 dark:bg-slate-700" />
                 <button
-                    className="gemini-btn hidden md:flex"
+                    className="gemini-btn hidden md:flex disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={isLoading || summaries.length === 0}
                     onClick={() => setAnalyzeDrawerIsOpen(true)}
                 >
                     <Sparkles className="gemini-btn-icon w-4 h-4" />

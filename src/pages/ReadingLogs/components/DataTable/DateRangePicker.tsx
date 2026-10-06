@@ -12,7 +12,10 @@ export default function DateRangePicker() {
             <DateDropdown
                 value={startDate}
                 options={availableDays}
-                onChange={setStartDate}
+                onChange={(date) => {
+                    setStartDate(date);
+                    if (date > endDate) setEndDate(date);
+                }}
             />
 
             <span className="text-gray-400 text-sm">to</span>
@@ -20,7 +23,10 @@ export default function DateRangePicker() {
             <DateDropdown
                 value={endDate}
                 options={availableDays}
-                onChange={setEndDate}
+                onChange={(date) => {
+                    setEndDate(date);
+                    if (date < startDate) setStartDate(date);
+                }}
             />
         </div>
     );

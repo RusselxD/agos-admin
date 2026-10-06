@@ -32,8 +32,10 @@ export default function RiskScoreChart() {
     const { summaries } = useReadingLogs();
 
     const chartData = useMemo(() => {
-        // Reverse to show oldest first (chronological order)
-        const sorted = [...summaries].reverse();
+        // Keep dates chronological, regardless of response order.
+        const sorted = [...summaries].sort((a, b) =>
+            a.summary_date.localeCompare(b.summary_date),
+        );
         return {
             labels: sorted.map((s) => formatDate(s.summary_date)),
             minScores: sorted.map((s) => s.min_risk_score),

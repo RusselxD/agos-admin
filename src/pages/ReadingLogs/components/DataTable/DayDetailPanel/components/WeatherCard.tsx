@@ -1,11 +1,12 @@
+import { createElement } from "react";
 import {
     getWeatherDescription,
     getWeatherIcon,
 } from "../../../../../../lib/utils/weather";
 
-export default function WeatherCard({ weatherCode }: { weatherCode: number }) {
-    const WeatherIcon = getWeatherIcon(weatherCode);
-    const description = getWeatherDescription(weatherCode);
+export default function WeatherCard({ weatherCode }: { weatherCode: number | null }) {
+    const WeatherIcon = getWeatherIcon(weatherCode ?? -1);
+    const description = weatherCode === null ? "N/A" : getWeatherDescription(weatherCode);
 
     return (
         <div className="bg-gradient-to-br from-sky-50 to-blue-50 dark:from-slate-800 dark:to-slate-800 rounded-xl border border-sky-100 dark:border-slate-700/50 p-4">
@@ -19,7 +20,7 @@ export default function WeatherCard({ weatherCode }: { weatherCode: number }) {
                     </p>
                 </div>
                 <div className="p-4 rounded-2xl bg-white/60 dark:bg-sky-500/10 shadow-sm">
-                    <WeatherIcon className="w-8 h-8 text-sky-500 dark:text-sky-400" />
+                    {createElement(WeatherIcon, { className: "w-8 h-8 text-sky-500 dark:text-sky-400" })}
                 </div>
             </div>
         </div>

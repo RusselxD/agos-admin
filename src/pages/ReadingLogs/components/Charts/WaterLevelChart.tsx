@@ -32,7 +32,9 @@ export default function WaterLevelChart() {
     const { summaries } = useReadingLogs();
 
     const chartData = useMemo(() => {
-        const sorted = [...summaries].reverse();
+        const sorted = [...summaries].sort((a, b) =>
+            a.summary_date.localeCompare(b.summary_date),
+        );
         return {
             labels: sorted.map((s) => formatDate(s.summary_date)),
             minLevels: sorted.map((s) => s.min_water_level_cm),
@@ -47,10 +49,12 @@ export default function WaterLevelChart() {
     const gridColor = isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)";
 
     const options = useMemo(() => {
-        const allLevels = [...chartData.minLevels, ...chartData.maxLevels];
+        const allLevels = [...chartData.minLevels, ...chartData.maxLevels].filter(
+            (level): level is number => level !== null,
+        );
         const minLevel = allLevels.length > 0 ? Math.min(...allLevels) : 0;
         const maxLevel = allLevels.length > 0 ? Math.max(...allLevels) : 100;
-        const range = maxLevel - minLevel;
+        const range = Math.max(maxLevel - minLevel, 10);
         const yMin = Math.max(0, Math.floor(minLevel - range * 0.1));
         const yMax = Math.ceil(maxLevel + range * 0.1);
 

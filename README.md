@@ -50,6 +50,7 @@ npm run dev
 | `npm run build` | Type-check and build for production |
 | `npm run lint` | Run ESLint |
 | `npm run preview` | Preview production build |
+| `npm run test:reading-logs` | Run reading-log metric, AI stream, and token-refresh regression tests |
 
 ## Pages
 

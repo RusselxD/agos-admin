@@ -21,7 +21,7 @@ function Shimmer() {
 export default function AnalyzePanel() {
     const { setAnalyzeDrawerIsOpen, summaries, startDate, endDate } =
         useReadingLogs();
-    const { text, status, analyze, reset } = useAnalysisStream();
+    const { text, status, error, analyze, reset } = useAnalysisStream();
     const scrollRef = useRef<HTMLDivElement>(null);
 
     // Auto-scroll as text streams in
@@ -41,7 +41,7 @@ export default function AnalyzePanel() {
 
         // Cancel the stream if the drawer is closed mid-generation
         return () => reset();
-    }, []);
+    }, [analyze, reset, startDate, endDate, summaries]);
 
     const handleClose = () => {
         reset();
@@ -78,7 +78,7 @@ export default function AnalyzePanel() {
                     {isLoading && <Shimmer />}
 
                     {/* AI analysis bubble */}
-                    {(isStreaming || isDone) && text && (
+                    {(isStreaming || isDone || isError) && text && (
                         <div className="flex gap-2.5 items-start">
                             <div className="flex-1 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/50 px-4 py-2 shadow-sm text-gray-800 dark:text-slate-200">
                                 <MarkdownText
@@ -93,7 +93,7 @@ export default function AnalyzePanel() {
                     {isError && (
                         <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
                             <p className="text-sm text-slate-500 dark:text-slate-400">
-                                Failed to generate analysis.
+                                {error || "Failed to generate analysis."}
                             </p>
                             <button
                                 onClick={() =>

@@ -4,8 +4,8 @@ import type { ElementType } from "react";
 
 interface ValueContainerProps {
     textClass: string;
-    value: number;
-    timestamp: string;
+    value: number | null;
+    timestamp: string | null;
     Icon: ElementType;
     label: string;
 }
@@ -26,11 +26,11 @@ const ValueContainer = ({
 
             <div className="text-right">
                 <span className={`text-xl font-bold ${textClass}`}>
-                    {value}
+                    {value ?? "N/A"}
                 </span>
 
                 <p className="text-xs text-gray-700 dark:text-slate-300">
-                    {formatTimestamp(timestamp)}
+                    {timestamp ? formatTimestamp(timestamp) : "N/A"}
                 </p>
             </div>
         </div>
@@ -40,10 +40,10 @@ const ValueContainer = ({
 interface HeroMetricCardProps {
     icon: ElementType;
     label: string;
-    minValue: number;
-    maxValue: number;
-    minTimestamp: string;
-    maxTimestamp: string;
+    minValue: number | null;
+    maxValue: number | null;
+    minTimestamp: string | null;
+    maxTimestamp: string | null;
     gradient: string;
     textClass: string;
     borderClass: string;
@@ -66,7 +66,7 @@ export default function HeroMetricCard({
     progressClass,
     blurClass,
 }: HeroMetricCardProps) {
-    const percentage = maxValue > 0 ? Math.min((maxValue / 100) * 100, 100) : 0;
+    const percentage = maxValue !== null && maxValue > 0 ? Math.min((maxValue / 100) * 100, 100) : 0;
 
     return (
         <div

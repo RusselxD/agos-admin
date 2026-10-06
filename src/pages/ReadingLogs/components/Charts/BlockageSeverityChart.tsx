@@ -27,7 +27,8 @@ export default function BlockageSeverityChart() {
         return distribution;
     }, [summaries]);
 
-    const totalDays = summaries.length;
+    const totalDays = chartData.clear + chartData.partial + chartData.blocked;
+    const missingDays = summaries.length - totalDays;
 
     const options = useMemo(
         () => ({
@@ -43,7 +44,7 @@ export default function BlockageSeverityChart() {
                         label: function (context: TooltipItem<"doughnut">) {
                             const value = context.raw as number;
                             const percentage = (
-                                (value / totalDays) *
+                                (value / Math.max(totalDays, 1)) *
                                 100
                             ).toFixed(1);
                             return `${context.label}: ${value} days (${percentage}%)`;
@@ -86,12 +87,15 @@ export default function BlockageSeverityChart() {
                             <p className="text-2xl font-bold text-neutral dark:text-slate-200 transition-colors">
                                 {total}
                             </p>
-                            <p className="text-xs text-gray-500 dark:text-slate-400 transition-colors">Total Days</p>
+                            <p className="text-xs text-gray-500 dark:text-slate-400 transition-colors">Observed Days</p>
                         </div>
                     </div>
                 </div>
                 {/* Custom legend */}
                 <div className="flex flex-col justify-center gap-6 text-sm font-semibold">
+                    {missingDays > 0 && (
+                        <span className="text-gray-500 dark:text-slate-400">N/A ({missingDays} days)</span>
+                    )}
                     <div className="flex items-center gap-2">
                         <span className="w-3 h-3 rounded-full bg-clear"></span>
                         <span className="text-gray-600 dark:text-slate-300 transition-colors">

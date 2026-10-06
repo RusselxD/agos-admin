@@ -28,7 +28,9 @@ export default function PrecipitationChart() {
     const { summaries } = useReadingLogs();
 
     const chartData = useMemo(() => {
-        const sorted = [...summaries].reverse();
+        const sorted = [...summaries].sort((a, b) =>
+            a.summary_date.localeCompare(b.summary_date),
+        );
         return {
             labels: sorted.map((s) => formatDate(s.summary_date)),
             minPrecip: sorted.map((s) => s.min_precipitation_mm),

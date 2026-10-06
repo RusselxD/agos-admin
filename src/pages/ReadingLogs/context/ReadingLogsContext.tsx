@@ -9,6 +9,7 @@ import {
 import type { DailySummary } from "../../../types/readingLogs";
 import { readingLogsAPI } from "../../../lib/api/readingLogs";
 import { useCoreHook } from "../../../context/CoreContext";
+import { getDefaultSummaryRange } from "../../../lib/utils/readingLogs";
 import { useToast } from "../../../context/ToastContext";
 
 interface ReadingLogsContextValue {
@@ -42,8 +43,7 @@ export function ReadingLogsProvider({
     const [summaries, setSummaries] = useState<DailySummary[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(true);
 
-    const initialFetchDone = useRef(false);
-    const prevDatesRef = useRef({ startDate: "", endDate: "" });
+    const [rangeLocationId, setRangeLocationId] = useState<number | null>(null);
 
     const { locationDetails } = useCoreHook();
     const { toastError } = useToast();
@@ -51,81 +51,65 @@ export function ReadingLogsProvider({
     const [analyzeDrawerIsOpen, setAnalyzeDrawerIsOpen] = useState(false);
     const [selectedSummary, setSelectedSummary] = useState<DailySummary | null>(null);
 
-    // Initial fetch to get available days and set default date range
+    // ToastContext callbacks may change on unrelated parent renders.
+    const toastErrorRef = useRef(toastError);
+    useEffect(() => { toastErrorRef.current = toastError; }, [toastError]);
+
     useEffect(() => {
-        const initialFetch = async () => {
+        let cancelled = false;
+        setRangeLocationId(null);
+        setAvailableDays([]);
+        setSummaries([]);
+        setStartDate("");
+        setEndDate("");
+        setSelectedSummary(null);
+        setAnalyzeDrawerIsOpen(false);
+        setIsLoading(true);
+        if (!locationDetails.location_id) return;
+
+        const initialize = async () => {
             try {
-                setIsLoading(true);
-                const days = await readingLogsAPI.getAvailableDays(
-                    locationDetails.location_id,
-                );
-                setAvailableDays(days);
-
-                if (days.length > 0) {
-                    const earliestDate = days[0];
-                    const latestDate =
-                        days.length >= 10 ? days[9] : days[days.length - 1];
-
-                    setStartDate(earliestDate);
-                    setEndDate(latestDate);
-                    prevDatesRef.current = {
-                        startDate: earliestDate,
-                        endDate: latestDate,
-                    };
-
-                    const summariesData =
-                        await readingLogsAPI.getDailySummaries(
-                            locationDetails.location_id,
-                            earliestDate,
-                            latestDate,
-                        );
-                    setSummaries(summariesData);
-                } else {
-                    setSummaries([]);
+                const days = await readingLogsAPI.getAvailableDays(locationDetails.location_id);
+                if (cancelled) return;
+                const range = getDefaultSummaryRange(days);
+                setAvailableDays(range.days);
+                setStartDate(range.startDate);
+                setEndDate(range.endDate);
+                setRangeLocationId(locationDetails.location_id);
+                if (!range.days.length) setIsLoading(false);
+            } catch {
+                if (!cancelled) {
+                    toastErrorRef.current("Failed to fetch reading logs");
+                    setIsLoading(false);
                 }
-            } catch (error) {
-                toastError("Failed to fetch reading logs");
-            } finally {
-                setIsLoading(false);
-                initialFetchDone.current = true;
             }
         };
-
-        initialFetch();
+        void initialize();
+        return () => { cancelled = true; };
     }, [locationDetails.location_id]);
 
-    // Fetch summaries when date range changes (only after initialization and if dates actually changed)
     useEffect(() => {
-        if (!initialFetchDone.current || !startDate || !endDate) return;
-
-        // Skip if dates haven't actually changed
-        if (
-            prevDatesRef.current.startDate === startDate &&
-            prevDatesRef.current.endDate === endDate
-        ) {
-            return;
-        }
-
-        prevDatesRef.current = { startDate, endDate };
-
+        if (rangeLocationId !== locationDetails.location_id || !startDate || !endDate) return;
+        let cancelled = false;
+        setIsLoading(true);
+        setSummaries([]);
+        setSelectedSummary(null);
+        setAnalyzeDrawerIsOpen(false);
         const fetchSummaries = async () => {
-            setIsLoading(true);
             try {
-                const summariesData = await readingLogsAPI.getDailySummaries(
-                    locationDetails.location_id,
-                    startDate,
-                    endDate,
+                const data = await readingLogsAPI.getDailySummaries(
+                    locationDetails.location_id, startDate, endDate,
                 );
-                setSummaries(summariesData);
-            } catch (error) {
-                toastError("Failed to fetch reading logs");
+                if (!cancelled) setSummaries(data);
+            } catch {
+                if (!cancelled) toastErrorRef.current("Failed to fetch reading logs");
             } finally {
-                setIsLoading(false);
+                if (!cancelled) setIsLoading(false);
             }
         };
-
-        fetchSummaries();
-    }, [startDate, endDate, locationDetails.location_id]);
+        void fetchSummaries();
+        return () => { cancelled = true; };
+    }, [startDate, endDate, locationDetails.location_id, rangeLocationId]);
 
     const contextValue = useMemo(
         () => ({
@@ -159,6 +143,8 @@ export function ReadingLogsProvider({
     );
 }
 
+// Context providers and their consumer hook intentionally share this module.
+// eslint-disable-next-line react-refresh/only-export-components
 export const useReadingLogs = () => {
     const context = useContext(ReadingLogsContext);
     if (context === undefined) {

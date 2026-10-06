@@ -30,7 +30,8 @@ const BlockageBadge = ({ status }: { status: string | null }) => {
     );
 };
 
-const RiskBadge = ({ score }: { score: number }) => {
+const RiskBadge = ({ score }: { score: number | null }) => {
+    if (score === null) return <span className="text-gray-400 dark:text-slate-500">N/A</span>;
     let bgColor = "bg-clear/15 dark:bg-emerald-900/20 text-clear dark:text-emerald-400 ring-1 ring-clear/20 dark:ring-emerald-800/50";
 
     if (score >= 70) {
@@ -66,14 +67,14 @@ export default function TableRow({ summary, index, onSelect }: TableRowProps) {
             </td>
             <td className="px-5 py-4 text-left whitespace-nowrap">
                 <span className="text-sm">
-                    {summary.min_water_level_cm} - {summary.max_water_level_cm}{" "}
+                    {summary.min_water_level_cm ?? "N/A"} - {summary.max_water_level_cm ?? "N/A"}{" "}
                     cm
                 </span>
             </td>
             <td className="px-5 py-4 text-left whitespace-nowrap">
                 <span className="text-sm">
-                    {summary.min_precipitation_mm} -{" "}
-                    {summary.max_precipitation_mm} mm
+                    {summary.min_precipitation_mm ?? "N/A"} -{" "}
+                    {summary.max_precipitation_mm ?? "N/A"} mm
                 </span>
             </td>
             <td className="px-5 py-4 text-left">

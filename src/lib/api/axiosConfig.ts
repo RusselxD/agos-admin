@@ -1,6 +1,6 @@
 import axios, { type InternalAxiosRequestConfig } from "axios";
 
-let refreshPromise: Promise<{ accessToken: string; refreshToken: string } | null> | null = null;
+let refreshPromise: Promise<{ accessToken: string; refreshToken: string }> | null = null;
 let refreshFailed = false;
 
 /**
@@ -34,66 +34,54 @@ apiClient.interceptors.request.use(
     },
 );
 
-// Add a response interceptor to handle errors
+/** Shared by Axios requests and fetch-based streaming requests. */
+export function expireAuthSession() {
+    clearAuthTokens();
+    if (!window.location.pathname.includes("/auth/login")) {
+        window.location.href = "/auth/login";
+    }
+}
+
+export async function refreshAccessToken(): Promise<string> {
+    const refreshToken = localStorage.getItem("refreshToken");
+    if (refreshFailed || !refreshToken) {
+        expireAuthSession();
+        throw new Error("Your session has expired. Please sign in again.");
+    }
+    if (!refreshPromise) {
+        refreshPromise = (async () => {
+            try {
+                const { data } = await axios.post(
+                    `${import.meta.env.VITE_API_BASE_URL}/api/v1/auth/refresh`,
+                    { refresh_token: refreshToken },
+                    { timeout: 10000 },
+                );
+                localStorage.setItem("authToken", data.access_token);
+                localStorage.setItem("refreshToken", data.refresh_token);
+                refreshFailed = false;
+                return { accessToken: data.access_token, refreshToken: data.refresh_token };
+            } catch {
+                refreshFailed = true;
+                expireAuthSession();
+                throw new Error("Your session has expired. Please sign in again.");
+            } finally {
+                refreshPromise = null;
+            }
+        })();
+    }
+    const tokens = await refreshPromise;
+    return tokens.accessToken;
+}
+
 apiClient.interceptors.response.use(
     (response) => response,
     async (error) => {
         const original = error.config;
-
-        if (error.response?.status === 401 && !original._retry) {
+        if (error.response?.status === 401 && original && !original._retry) {
             original._retry = true;
-
-            if (refreshFailed) {
-                clearAuthTokens();
-                if (!window.location.pathname.includes("/auth/login")) {
-                    window.location.href = "/auth/login";
-                }
-                return Promise.reject(error);
-            }
-
-            const refreshToken = localStorage.getItem("refreshToken");
-            if (!refreshToken) {
-                clearAuthTokens();
-                if (!window.location.pathname.includes("/auth/login")) {
-                    window.location.href = "/auth/login";
-                }
-                return Promise.reject(error);
-            }
-
-            try {
-                if (!refreshPromise) {
-                    refreshPromise = (async () => {
-                        try {
-                            const { data } = await axios.post(
-                                `${import.meta.env.VITE_API_BASE_URL}/api/v1/auth/refresh`,
-                                { refresh_token: refreshToken },
-                            );
-                            localStorage.setItem("authToken", data.access_token);
-                            localStorage.setItem("refreshToken", data.refresh_token);
-                            refreshFailed = false;
-                            return {
-                                accessToken: data.access_token,
-                                refreshToken: data.refresh_token,
-                            };
-                        } finally {
-                            refreshPromise = null;
-                        }
-                    })();
-                }
-
-                const tokens = await refreshPromise;
-                if (tokens) {
-                    original.headers.Authorization = `Bearer ${tokens.accessToken}`;
-                    return apiClient(original);
-                }
-            } catch {
-                refreshFailed = true;
-                clearAuthTokens();
-                if (!window.location.pathname.includes("/auth/login")) {
-                    window.location.href = "/auth/login";
-                }
-                return Promise.reject(error);
-            }
+            const token = await refreshAccessToken();
+            original.headers.Authorization = `Bearer ${token}`;
+            return apiClient(original);
         }
         return Promise.reject(error);
     },
