@@ -6,9 +6,9 @@ import { useReadingLogs } from "../../context/ReadingLogsContext";
 import { formatDate } from "../../../../lib/utils/formatter";
 
 export default function SummaryCardsContainer() {
-    const { summaries, isLoading } = useReadingLogs();
+    const { summaries, isLoading, analysis } = useReadingLogs();
 
-    const stats = useMemo(() => getSummaryStats(summaries), [summaries]);
+    const stats = useMemo(() => analysis.report?.stats ?? getSummaryStats(summaries), [summaries, analysis.report]);
 
     if (isLoading) {
         return (

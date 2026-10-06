@@ -8,8 +8,12 @@ export type AnalysisPayload = {
 };
 
 export async function requestAnalysis(payload: AnalysisPayload, signal: AbortSignal) {
+    return requestAnalysisStream("/daily-summaries", signal, payload);
+}
+
+export async function requestAnalysisStream(path: string, signal: AbortSignal, payload?: AnalysisPayload) {
     const send = () => fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/api/v1/analysis/daily-summaries`,
+        `${import.meta.env.VITE_API_BASE_URL}/api/v1/analysis${path}`,
         {
             method: "POST",
             headers: {
@@ -28,7 +32,10 @@ export async function requestAnalysis(payload: AnalysisPayload, signal: AbortSig
         response = await send();
         if (response.status === 401) expireAuthSession();
     }
-    if (!response.ok) throw new Error("Failed to generate analysis. Please try again.");
+    if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(typeof data?.detail === "string" ? data.detail : "Failed to generate analysis. Please try again.");
+    }
     return response;
 }
 

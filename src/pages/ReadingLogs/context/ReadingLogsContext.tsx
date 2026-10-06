@@ -6,6 +6,7 @@ import {
     useEffect,
     useRef,
 } from "react";
+import { useAnalysisStream } from "../../../hooks/useAnalysisStream";
 import type { DailySummary } from "../../../types/readingLogs";
 import { readingLogsAPI } from "../../../lib/api/readingLogs";
 import { useCoreHook } from "../../../context/CoreContext";
@@ -13,6 +14,8 @@ import { getDefaultSummaryRange } from "../../../lib/utils/readingLogs";
 import { useToast } from "../../../context/ToastContext";
 
 interface ReadingLogsContextValue {
+    analysis: ReturnType<typeof useAnalysisStream>;
+    locationId: number;
     startDate: string;
     endDate: string;
     availableDays: string[];
@@ -41,6 +44,8 @@ export function ReadingLogsProvider({
     const [availableDays, setAvailableDays] = useState<string[]>([]);
 
     const [summaries, setSummaries] = useState<DailySummary[]>([]);
+    const analysis = useAnalysisStream(setSummaries);
+    const { reset: resetAnalysis } = analysis;
     const [isLoading, setIsLoading] = useState<boolean>(true);
 
     const [rangeLocationId, setRangeLocationId] = useState<number | null>(null);
@@ -57,6 +62,7 @@ export function ReadingLogsProvider({
 
     useEffect(() => {
         let cancelled = false;
+        resetAnalysis();
         setRangeLocationId(null);
         setAvailableDays([]);
         setSummaries([]);
@@ -86,11 +92,12 @@ export function ReadingLogsProvider({
         };
         void initialize();
         return () => { cancelled = true; };
-    }, [locationDetails.location_id]);
+    }, [locationDetails.location_id, resetAnalysis]);
 
     useEffect(() => {
         if (rangeLocationId !== locationDetails.location_id || !startDate || !endDate) return;
         let cancelled = false;
+        resetAnalysis();
         setIsLoading(true);
         setSummaries([]);
         setSelectedSummary(null);
@@ -109,10 +116,12 @@ export function ReadingLogsProvider({
         };
         void fetchSummaries();
         return () => { cancelled = true; };
-    }, [startDate, endDate, locationDetails.location_id, rangeLocationId]);
+    }, [startDate, endDate, locationDetails.location_id, rangeLocationId, resetAnalysis]);
 
     const contextValue = useMemo(
         () => ({
+            analysis,
+            locationId: locationDetails.location_id,
             summaries,
             isLoading,
             startDate,
@@ -126,6 +135,8 @@ export function ReadingLogsProvider({
             setSelectedSummary,
         }),
         [
+            analysis,
+            locationDetails.location_id,
             summaries,
             isLoading,
             startDate,

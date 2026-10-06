@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useReadingLogs } from "../../context/ReadingLogsContext";
-import { useAnalysisStream } from "../../../../hooks/useAnalysisStream";
+import { Download, LoaderCircle } from "lucide-react";
 import MarkdownText from "./components/MarkDownText";
 import Header from "./components/Header";
 
@@ -19,9 +19,9 @@ function Shimmer() {
 }
 
 export default function AnalyzePanel() {
-    const { setAnalyzeDrawerIsOpen, summaries, startDate, endDate } =
+    const { setAnalyzeDrawerIsOpen, locationId, analysis, startDate, endDate } =
         useReadingLogs();
-    const { text, status, error, analyze, reset } = useAnalysisStream();
+    const { text, status, error, analyze, cancel, report, downloadPdf, isExporting, exportError } = analysis;
     const scrollRef = useRef<HTMLDivElement>(null);
 
     // Auto-scroll as text streams in
@@ -31,20 +31,13 @@ export default function AnalyzePanel() {
         }
     }, [text]);
 
-    // Kick off analysis as soon as the drawer mounts
+    // The provider retains the completed report when the drawer is closed.
     useEffect(() => {
-        analyze({
-            start_date: startDate,
-            end_date: endDate,
-            summaries,
-        });
-
-        // Cancel the stream if the drawer is closed mid-generation
-        return () => reset();
-    }, [analyze, reset, startDate, endDate, summaries]);
+        if (status === "idle") void analyze({ location_id: locationId, start_date: startDate, end_date: endDate });
+    }, [analyze, status, locationId, startDate, endDate]);
 
     const handleClose = () => {
-        reset();
+        cancel();
         setAnalyzeDrawerIsOpen(false);
     };
 
@@ -72,6 +65,14 @@ export default function AnalyzePanel() {
                     handleClose={handleClose}
                 />
 
+                {report && (
+                    <div className="px-5 py-3 text-xs text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
+                        <p>{report.location_name} · {report.summaries.length} observed days · {report.timezone}</p>
+                        {report.missing_dates.length > 0 && <p>{report.missing_dates.length} days have no summary.</p>}
+                        <p>Data captured: {new Date(Date.parse(report.created_at) + report.utc_offset_hours * 3600000)
+                            .toLocaleString("en-PH", { timeZone: "UTC", hour12: false })} {report.timezone}</p>
+                    </div>
+                )}
                 {/* Scrollable content */}
                 <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar">
                     {/* Shimmer while loading */}
@@ -100,7 +101,7 @@ export default function AnalyzePanel() {
                                     analyze({
                                         start_date: startDate,
                                         end_date: endDate,
-                                        summaries,
+                                        location_id: locationId,
                                     })
                                 }
                                 className="text-xs text-sky-600 font-medium hover:underline"
@@ -110,6 +111,17 @@ export default function AnalyzePanel() {
                         </div>
                     )}
                 </div>
+                {isDone && report?.status === "complete" && (
+                    <div className="shrink-0 p-4 border-t border-slate-200 dark:border-slate-800">
+                        <button disabled={isExporting} onClick={() => void downloadPdf()}
+                            className="w-full flex justify-center items-center gap-2 rounded-lg bg-sky-600 text-white py-2.5 text-sm font-medium hover:bg-sky-700 disabled:opacity-60">
+                            {isExporting ? <LoaderCircle className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                            {isExporting ? "Preparing PDF…" : "Download PDF report"}
+                        </button>
+                        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">Includes the selected dates, charts, daily readings, and this AI overview.</p>
+                        {exportError && <p role="alert" className="mt-2 text-xs text-red-600 dark:text-red-400">{exportError}</p>}
+                    </div>
+                )}
             </div>
         </>
     );

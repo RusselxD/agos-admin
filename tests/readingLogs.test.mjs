@@ -10,6 +10,7 @@ const bundled = buildSync({
     stdin: {
         contents: `export * from "./src/lib/utils/readingLogs";
             export * from "./src/lib/api/analysis";
+            export * from "./src/lib/api/readingReports";
             export * from "./src/lib/api/axiosConfig";
             export { default as apiClient } from "./src/lib/api/axiosConfig";
             export { default as axios } from "axios";`,
@@ -20,7 +21,7 @@ const bundled = buildSync({
 });
 const {
     getDefaultSummaryRange, getSummaryStats, readAnalysisStream, requestAnalysis,
-    resetRefreshState, refreshAccessToken, axios, apiClient,
+    resetRefreshState, refreshAccessToken, axios, apiClient, readingReportsAPI, reportErrorMessage,
 } = await import(`data:text/javascript;base64,${Buffer.from(bundled.outputFiles[0].text).toString("base64")}`);
 const originalFetch = globalThis.fetch;
 const originalAdapter = axios.defaults.adapter;
@@ -161,4 +162,54 @@ test("closing analysis during refresh prevents another AI request", async () => 
     globalThis.fetch = async () => { requests++; return new Response(null, { status: 401 }); };
     await assert.rejects(requestAnalysis(payload, controller.signal), { name: "AbortError" });
     assert.equal(requests, 1);
+});
+
+
+test("report creation sends only the requested range and reuses its idempotency ID", async () => {
+    const previous = apiClient.defaults.adapter;
+    const bodies = [];
+    apiClient.defaults.adapter = async (config) => {
+        assert.equal(config.url, "/analysis/reports");
+        bodies.push(JSON.parse(config.data));
+        return { data: { id: "saved-report" }, status: 201, config };
+    };
+    try {
+        const requested = { ...payload, location_id: 1, summaries: [{ fabricated: true }] };
+        await readingReportsAPI.create(requested, "request-id", new AbortController().signal);
+        await readingReportsAPI.create(requested, "request-id", new AbortController().signal);
+        assert.deepEqual(bodies[0], { location_id: 1, start_date: payload.start_date,
+            end_date: payload.end_date, request_id: "request-id" });
+        assert.deepEqual(bodies[1], bodies[0]);
+    } finally { apiClient.defaults.adapter = previous; }
+});
+
+test("report AI streams from the saved report ID with no browser summaries", async () => {
+    globalThis.fetch = async (url, config) => {
+        assert.equal(url, "http://agos.test/api/v1/analysis/reports/saved-report/stream");
+        assert.equal(config.body, undefined);
+        assert.equal(config.headers.Authorization, "Bearer expired");
+        return response(['data: {"done":true}\n\n']);
+    };
+    assert.equal((await readingReportsAPI.stream("saved-report", new AbortController().signal)).status, 200);
+});
+
+test("PDF requests retain auth, blob download and a rendering timeout", async () => {
+    const previous = apiClient.defaults.adapter;
+    apiClient.defaults.adapter = async (config) => {
+        assert.equal(config.url, "/analysis/reports/saved-report/pdf");
+        assert.equal(config.responseType, "blob");
+        assert.equal(config.timeout, 120000);
+        assert.equal(config.headers.Authorization, "Bearer expired");
+        return { data: new Blob(["%PDF-test"], { type: "application/pdf" }), status: 200, config };
+    };
+    try {
+        assert.equal((await readingReportsAPI.pdf("saved-report", new AbortController().signal)).type, "application/pdf");
+    } finally { apiClient.defaults.adapter = previous; }
+});
+
+test("PDF errors encoded as blobs remain useful retry messages", async () => {
+    const error = { isAxiosError: true, response: { data: new Blob([
+        JSON.stringify({ detail: "PDF generation is busy. Please retry shortly." }),
+    ], { type: "application/json" }) } };
+    assert.equal(await reportErrorMessage(error), "PDF generation is busy. Please retry shortly.");
 });
